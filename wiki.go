@@ -11,6 +11,9 @@ func main() {
 	p1.save()
 	p2, _ := loadPage("TestPage")
 	fmt.Println(string(p2.Body))
+
+	http.HandleFunc("/view/", viewWikiHandler)
+	http.ListenAndServe(":8080", nil)
 }
 
 // Allow users to view a wiki page.
