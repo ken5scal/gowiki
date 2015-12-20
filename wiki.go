@@ -6,6 +6,10 @@ import (
 	"net/http"
 )
 
+// Template Caching
+var templates = template.Must(
+	template.ParseFiles("edit.html", "view.html"))
+
 func main() {
 	//	p1 := &Page{Title: "TestPage", Body: []byte("This is a sample page.")}
 	//	p1.save()
@@ -52,17 +56,32 @@ func editWikiHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // Handle the submission of forms located on the edit pages.
-func saveHandler(w http.ResponseWriter, r *http.Request) {
+func saveWikiHandler(w http.ResponseWriter, r *http.Request) {
 	title := r.URL.Path[len("/save/"):]
 	body := r.FormValue("body") // Returns type string
 	p := &Page{Title: title, Body: []byte(body)}
-	p.save()
+	err := p.save()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	http.Redirect(w, r, "/view/"+title, http.StatusFound)
 }
 
 func renderTemplate(w http.ResponseWriter, tmpl string, p *Page) {
-	t, _ := template.ParseFiles(tmpl + ".html") // retun a *template.Template
-	t.Execute(w, p)                             // Execute the template ,writing generated HTML to w
+	err := templates.ExecuteTemplate(w, tmpl+".html", p)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	//	t, err := template.ParseFiles(tmpl + ".html") // retun a *template.Template
+	//	if err != nil {
+	//		http.Error(w, err.Error(), http.StatusInternalServerError)
+	//		return
+	//	}
+	//	err = t.Execute(w, p) // Execute the template ,writing generated HTML to w
+	//	if err != nil {
+	//		http.Error(w, err.Error(), http.StatusInternalServerError)
+	//	}
 }
 
 /*
