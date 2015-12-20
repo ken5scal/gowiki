@@ -23,7 +23,13 @@ func viewWikiHandler(w http.ResponseWriter, r *http.Request) {
 	// Extracting the Page title from URL
 	// Also droppoing the leading ?view?
 	title := r.URL.Path[len("/view/"):]
-	p, _ := loadPage(title)
+	//p, _ := loadPage(title) //Shows a page containing HTML as it tries to fill template with no data
+	p, err := loadPage(title)
+	if err != nil {
+		// Redirecting the client to the edit Page
+		http.Redirect(w, r, "/edit/"+title, http.StatusFound)
+		return
+	}
 	renderTemplate(w, "view", p)
 	//fmt.Fprintf(w, "<h1>%s</h1><div>%s</div>", p.Title, p.Body)
 }
@@ -43,6 +49,15 @@ func editWikiHandler(w http.ResponseWriter, r *http.Request) {
 	//		"<input type=\"submit\" value=\"Save\">"+
 	//		"</form>",
 	//		p.Title, p.Title, p.Body)
+}
+
+// Handle the submission of forms located on the edit pages.
+func saveHandler(w http.ResponseWriter, r *http.Request) {
+	title := r.URL.Path[len("/save/"):]
+	body := r.FormValue("body") // Returns type string
+	p := &Page{Title: title, Body: []byte(body)}
+	p.save()
+	http.Redirect(w, r, "/view/"+title, http.StatusFound)
 }
 
 func renderTemplate(w http.ResponseWriter, tmpl string, p *Page) {
