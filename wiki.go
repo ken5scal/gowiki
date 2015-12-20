@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
+	"net/http"
 )
 
 func main() {
@@ -10,6 +11,15 @@ func main() {
 	p1.save()
 	p2, _ := loadPage("TestPage")
 	fmt.Println(string(p2.Body))
+}
+
+// Allow users to view a wiki page.
+func viewWikiHandler(w http.ResponseWriter, r *http.Request) {
+	// Extracting the Page title from URL
+	// Also droppoing the leading ?view?
+	title := r.URL.Path[len("/view/"):]
+	p, _ := loadPage(title)
+	fmt.Fprintf(w, "<h1>%s</h1><div>%s</div>", p.Title, p.Body)
 }
 
 /*
