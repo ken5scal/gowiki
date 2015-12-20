@@ -1,14 +1,19 @@
 package main
 
 import (
+	"errors"
 	"html/template"
 	"io/ioutil"
 	"net/http"
+	"regexp"
 )
 
-// Template Caching
+// Template Caching(Panic when passed a non-nil error value)
 var templates = template.Must(
 	template.ParseFiles("edit.html", "view.html"))
+
+// Validation(Panic if expression compilation fails)
+var validPath = regexp.MustCompile("^/(edit|save|view)/([a-zA-Z0-9]+)$")
 
 func main() {
 	//	p1 := &Page{Title: "TestPage", Body: []byte("This is a sample page.")}
@@ -26,7 +31,11 @@ func main() {
 func viewWikiHandler(w http.ResponseWriter, r *http.Request) {
 	// Extracting the Page title from URL
 	// Also droppoing the leading ?view?
-	title := r.URL.Path[len("/view/"):]
+	//title := r.URL.Path[len("/view/"):]
+	title, err := getTitle(w, r)
+	if err != nil {
+		return
+	}
 	//p, _ := loadPage(title) //Shows a page containing HTML as it tries to fill template with no data
 	p, err := loadPage(title)
 	if err != nil {
@@ -40,7 +49,11 @@ func viewWikiHandler(w http.ResponseWriter, r *http.Request) {
 
 // loads the page (if it the page doesn't exist, create an empty Page struct
 func editWikiHandler(w http.ResponseWriter, r *http.Request) {
-	title := r.URL.Path[len("/edit/"):]
+	//title := r.URL.Path[len("/edit/"):]
+	title, err := getTitle(w, r)
+	if err != nil {
+		return
+	}
 	p, err := loadPage(title)
 	if err != nil {
 		p = &Page{Title: title}
@@ -57,10 +70,14 @@ func editWikiHandler(w http.ResponseWriter, r *http.Request) {
 
 // Handle the submission of forms located on the edit pages.
 func saveWikiHandler(w http.ResponseWriter, r *http.Request) {
-	title := r.URL.Path[len("/save/"):]
+	//title := r.URL.Path[len("/save/"):]
+	title, err := getTitle(w, r)
+	if err != nil {
+		return
+	}
 	body := r.FormValue("body") // Returns type string
 	p := &Page{Title: title, Body: []byte(body)}
-	err := p.save()
+	err = p.save()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -84,10 +101,20 @@ func renderTemplate(w http.ResponseWriter, tmpl string, p *Page) {
 	//	}
 }
 
-/*
-  Data Structures
-*/
+func getTitle(w http.ResponseWriter, r *http.Request) (string, error) {
+	m := validPath.FindStringSubmatch(r.URL.Path)
+	if m == nil {
+		http.NotFound(w, r)
+		return "", errors.New("Invalid Page Title")
+	}
+	return m[2], nil // the title is the 2nd subexpression:w
+}
 
+/**********************************
+***********************************
+  Data Structures
+***********************************
+************************************/
 // Wikiページ.ページデータがメモリに保存される
 type Page struct {
 	Title string
