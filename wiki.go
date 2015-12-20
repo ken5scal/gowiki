@@ -1,6 +1,16 @@
 package main
 
-import "io/ioutil"
+import (
+	"fmt"
+	"io/ioutil"
+)
+
+func main() {
+	p1 := &Page{Title: "TestPage", Body: []byte("This is a sample page.")}
+	p1.save()
+	p2, _ := loadPage("TestPage")
+	fmt.Println(string(p2.Body))
+}
 
 /*
   Data Structures
@@ -23,8 +33,16 @@ func (p *Page) save() error {
 }
 
 // Returns a pointer to a Page literal
-func loadPages(title string) *Page {
+func loadPage(title string) (*Page, error) {
 	filename := title + ".txt"
-	body, _ := ioutil.ReadFile(filename)
-	return &Page{Title: title, Body: body}
+	// TODO Handle error
+	// underscore(_) symbol is used to throw away the value
+	//body, _ := ioutil.ReadFile(filename)
+	body, err := ioutil.ReadFile(filename)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &Page{Title: title, Body: body}, nil
 }
