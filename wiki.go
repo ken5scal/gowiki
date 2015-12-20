@@ -7,12 +7,14 @@ import (
 )
 
 func main() {
-	p1 := &Page{Title: "TestPage", Body: []byte("This is a sample page.")}
-	p1.save()
-	p2, _ := loadPage("TestPage")
-	fmt.Println(string(p2.Body))
+	//	p1 := &Page{Title: "TestPage", Body: []byte("This is a sample page.")}
+	//	p1.save()
+	//	p2, _ := loadPage("TestPage")
+	//	fmt.Println(string(p2.Body))
 
 	http.HandleFunc("/view/", viewWikiHandler)
+	http.HandleFunc("/edit/", editWikiHandler)
+	http.HandleFunc("/save/", saveWikiHandler)
 	http.ListenAndServe(":8080", nil)
 }
 
