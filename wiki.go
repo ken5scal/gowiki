@@ -21,22 +21,22 @@ func main() {
 	//	p2, _ := loadPage("TestPage")
 	//	fmt.Println(string(p2.Body))
 
-	http.HandleFunc("/view/", viewWikiHandler)
-	http.HandleFunc("/edit/", editWikiHandler)
-	http.HandleFunc("/save/", saveWikiHandler)
+	http.HandleFunc("/view/", makeHandler(viewWikiHandler))
+	http.HandleFunc("/edit/", makeHandler(editWikiHandler))
+	http.HandleFunc("/save/", makeHandler(saveWikiHandler))
 	http.ListenAndServe(":8080", nil)
 }
 
 // Allow users to view a wiki page.
-func viewWikiHandler(w http.ResponseWriter, r *http.Request) {
+func viewWikiHandler(w http.ResponseWriter, r *http.Request, title string) {
 	// Extracting the Page title from URL
 	// Also droppoing the leading ?view?
-	//title := r.URL.Path[len("/view/"):]
-	title, err := getTitle(w, r)
-	if err != nil {
-		return
-	}
-	//p, _ := loadPage(title) //Shows a page containing HTML as it tries to fill template with no data
+	//	//title := r.URL.Path[len("/view/"):]
+	//	title, err := getTitle(w, r)
+	//	if err != nil {
+	//		return
+	//	}
+	//	//p, _ := loadPage(title) //Shows a page containing HTML as it tries to fill template with no data
 	p, err := loadPage(title)
 	if err != nil {
 		// Redirecting the client to the edit Page
@@ -48,12 +48,12 @@ func viewWikiHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // loads the page (if it the page doesn't exist, create an empty Page struct
-func editWikiHandler(w http.ResponseWriter, r *http.Request) {
+func editWikiHandler(w http.ResponseWriter, r *http.Request, title string) {
 	//title := r.URL.Path[len("/edit/"):]
-	title, err := getTitle(w, r)
-	if err != nil {
-		return
-	}
+	//	title, err := getTitle(w, r)
+	//	if err != nil {
+	//		return
+	//	}
 	p, err := loadPage(title)
 	if err != nil {
 		p = &Page{Title: title}
@@ -69,15 +69,15 @@ func editWikiHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // Handle the submission of forms located on the edit pages.
-func saveWikiHandler(w http.ResponseWriter, r *http.Request) {
-	//title := r.URL.Path[len("/save/"):]
-	title, err := getTitle(w, r)
-	if err != nil {
-		return
-	}
+func saveWikiHandler(w http.ResponseWriter, r *http.Request, title string) {
+	//	//title := r.URL.Path[len("/save/"):]
+	//	title, err := getTitle(w, r)
+	//	if err != nil {
+	//		return
+	//	}
 	body := r.FormValue("body") // Returns type string
 	p := &Page{Title: title, Body: []byte(body)}
-	err = p.save()
+	err := p.save()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -99,6 +99,19 @@ func renderTemplate(w http.ResponseWriter, tmpl string, p *Page) {
 	//	if err != nil {
 	//		http.Error(w, err.Error(), http.StatusInternalServerError)
 	//	}
+}
+
+// Wrappter function that takes a function of the above type,
+// and returns a Closure(type http.HandlerFund)
+func makeHandler(fn func(http.ResponseWriter, *http.Request, string)) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		m := validPath.FindStringSubmatch(r.URL.Path)
+		if m == nil {
+			http.NotFound(w, r)
+			return
+		}
+		fn(w, r, m[2])
+	}
 }
 
 func getTitle(w http.ResponseWriter, r *http.Request) (string, error) {
