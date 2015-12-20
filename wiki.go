@@ -24,8 +24,7 @@ func viewWikiHandler(w http.ResponseWriter, r *http.Request) {
 	// Also droppoing the leading ?view?
 	title := r.URL.Path[len("/view/"):]
 	p, _ := loadPage(title)
-	t, _ := template.ParseFiles("view.html")
-	t.Execute(w, p)
+	renderTemplate(w, "view", p)
 	//fmt.Fprintf(w, "<h1>%s</h1><div>%s</div>", p.Title, p.Body)
 }
 
@@ -36,15 +35,19 @@ func editWikiHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		p = &Page{Title: title}
 	}
-	t, _ := template.ParseFiles("edit.html") //return a *template.Template
-	t.Execute(w, p)                          // executes the template, writhing generated to w
 
+	renderTemplate(w, "edit", p)
 	//	fmt.Fprintf(w, "<h1>Editing %s</h1>"+
 	//		"<form action=\"/save/%s\" method=\"POST\">"+
 	//		"<textarea name=\"body\">%s</textarea><br>"+
 	//		"<input type=\"submit\" value=\"Save\">"+
 	//		"</form>",
 	//		p.Title, p.Title, p.Body)
+}
+
+func renderTemplate(w http.ResponseWriter, tmpl string, p *Page) {
+	t, _ := template.ParseFiles(tmpl + ".html") // retun a *template.Template
+	t.Execute(w, p)                             // Execute the template ,writing generated HTML to w
 }
 
 /*
